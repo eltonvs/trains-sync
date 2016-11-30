@@ -4,23 +4,21 @@
 #include <QObject>
 #include <thread>
 #include <chrono>
-using namespace std;
 
-class Trem : public QObject
-{
+class Trem : public QObject {
     Q_OBJECT
-public:
-    Trem(int,int,int);
+ public:
+    Trem(int, int, int);
     ~Trem();
     void start();
     void run();
     void setVelocidade(int);
     void setEnable(bool);
 
-signals:
-    void updateGUI(int,int,int);
+ signals:
+    void updateGUI(int, int, int);
 
-private:
+ private:
    std::thread threadTrem;
    int id;
    int x;
@@ -30,6 +28,3 @@ private:
 };
 
 #endif // TREM_H
-
-
-
