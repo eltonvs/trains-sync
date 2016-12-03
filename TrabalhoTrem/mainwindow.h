@@ -1,8 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "trem.h"
 #include <QMainWindow>
+#include <QCloseEvent>
+#include "trem.h"
+#include "semaforo.h"
 
 namespace Ui {
 class MainWindow;
@@ -18,12 +20,13 @@ class MainWindow : public QMainWindow {
  public slots:
     void updateInterface(int, int, int);
 
+ protected:
+    void closeEvent(QCloseEvent *event);
+
  private:
     Ui::MainWindow *ui;
-    Trem *trem1;
-    Trem *trem2;
-    Trem *trem3;
-    Trem *trem4;
+    std::vector<Trem *> trens;
+    std::vector<Semaforo *> semaforos;
 };
 
 #endif // MAINWINDOW_H

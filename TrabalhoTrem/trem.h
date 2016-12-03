@@ -4,6 +4,8 @@
 #include <QObject>
 #include <thread>
 #include <chrono>
+#include <vector>
+#include "semaforo.h"
 
 class Trem : public QObject {
     Q_OBJECT
@@ -12,8 +14,10 @@ class Trem : public QObject {
     ~Trem();
     void start();
     void run();
+    void verifyRegion();
     void setVelocidade(int);
     void setEnable(bool);
+    void addSemaforo(Semaforo *semaforo);
 
  signals:
     void updateGUI(int, int, int);
@@ -25,6 +29,7 @@ class Trem : public QObject {
    int y;
    int velocidade;
    bool enable;
+   std::vector<Semaforo *> semaforos;
 };
 
 #endif // TREM_H
