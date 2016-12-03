@@ -29,66 +29,47 @@ void Trem::start() {
     threadTrem = std::thread(&Trem::run, this);
 }
 
+void Trem::move(int type, int xi, int yi, int w, int h) {
+    if (type == 1) {  // anti-horario
+        if (y == yi && x > xi) // em cima
+            x -= 10;
+        else if (x == xi && y < (yi + h)) // lado esquerdo
+            y += 10;
+        else if (x < (xi + w) && y == (yi + h)) // embaixo
+            x += 10;
+        else // lado direito
+            y -= 10;
+    } else {  // horario
+        if (y == yi && x < (xi + w))  // em cima
+            x += 10;
+        else if (x == (xi + w) && y < (yi + h))  // lado direito
+            y += 10;
+        else if (x > xi && y == (yi + h))  // embaixo
+            x -= 10;
+        else  // lado esquerdo
+            y -= 10;
+    }
+}
+
 void Trem::run() {
     while (true) {
-        switch (id) {
-        case 1:
-            if (enable) {
+        if (enable) {
+            if (id == 1) {
                 emit updateGUI(id, x, y);
-                if (y == 30 && x > 130) // em cima
-                    x -= 10;
-                else if (x == 130 && y < 130) // lado esquerdo
-                    y += 10;
-                else if (x < 270 && y == 130) // embaixo
-                    x += 10;
-                else // lado direito
-                    y -= 10;
-            }
-            break;
-        case 2:
-            if (enable) {
+                move(1, 130, 30);
+            } else if (id == 2) {
                 emit updateGUI(id, x, y);
-                if (y == 130 && x < 270)  // em cima
-                    x += 10;
-                else if (x == 270 && y < 230)  // lado direito
-                    y += 10;
-                else if (x > 130 && y == 230)  // embaixo
-                    x -= 10;
-                else  // lado esquerdo
-                    y -= 10;
-            }
-            break;
-        case 3:
-            if (enable) {
+                move(0, 130, 130);
+            } else if (id == 3) {
                 emit updateGUI(id, x, y);
-                if (y == 130 && x < 410) // em cima
-                    x += 10;
-                else if (x == 410 && y < 230) // lado direito
-                    y += 10;
-                else if (x > 270 && y == 230) // embaixo
-                    x -= 10;
-                else // lado esquerdo
-                    y -= 10;
-            }
-            break;
-        case 4:
-            if (enable) {
+                move(0, 270, 130);
+            } else if (id == 4) {
                 emit updateGUI(id, x, y);
-                if (y == 230 && x < 410) // em cima
-                    x += 10;
-                else if (x == 410 && y < 330) // lado direito
-                    y += 10;
-                else if (x > 270 && y == 330) // embaixo
-                    x -= 10;
-                else // lado esquerdo
-                    y -= 10;
+                move(0, 270, 230);
             }
-            break;
-        default:
-            break;
+            verifyRegion();
         }
 
-        verifyRegion();
         std::this_thread::sleep_for(std::chrono::milliseconds(velocidade));
     }
 }
@@ -109,10 +90,6 @@ void Trem::verifyRegion() {
             semaforos.at(0)->P();
             semaforos.at(1)->P();
         }
-        // verifica se chegou na segunda região crítica
-        if (x == 260 && y == 130) {
-            //
-        }
         // verifica se saiu da primeira região crítica
         if (x == 270 && y == 140) {
             semaforos.at(0)->V();
@@ -122,10 +99,6 @@ void Trem::verifyRegion() {
             semaforos.at(1)->V();
         }
     } else if (id == 3) {
-        // verifica se chegou na segunda região crítica
-        if (x == 280 && y == 230) {
-            //
-        }
         // verifica se chegou na terceira região crítica
         if (x == 410 && y == 220) {
             semaforos.at(1)->P();

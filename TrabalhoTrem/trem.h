@@ -13,6 +13,7 @@ class Trem : public QObject {
     Trem(int, int, int);
     ~Trem();
     void start();
+    void move(int type, int xi, int yi, int w = 140, int h = 100);
     void run();
     void verifyRegion();
     void setVelocidade(int);
