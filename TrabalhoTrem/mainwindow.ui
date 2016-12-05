@@ -194,6 +194,9 @@ border: 1px solid black;</string>
       <height>23</height>
      </rect>
     </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
    </widget>
    <widget class="QLCDNumber" name="nbSem02">
     <property name="geometry">

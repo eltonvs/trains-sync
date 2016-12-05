@@ -16,7 +16,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         trens.at(i)->start();
     }
 
-
     // Cria Semáforos
     semaforos.push_back(new Semaforo(1231, 1, IPC_CREAT|0600));  // Região Crítica 1
     semaforos.push_back(new Semaforo(1232, 1, IPC_CREAT|0600));  // Região Crítica 2
@@ -42,8 +41,97 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
+void MainWindow::socketHandler(MainWindow *window, int socketDescriptor, Data data) {
+    int byteslidos;
+
+    //Verificando erros
+    if (socketDescriptor == -1) {
+        printf("Falha ao executar accept()");
+        exit(EXIT_FAILURE);
+    }
+
+    // receber uma msg do cliente
+    byteslidos = recv(socketDescriptor, &data, sizeof(data), 0);
+
+    if (byteslidos == -1) {
+        printf("Falha ao executar recv()");
+        exit(EXIT_FAILURE);
+    } else if (byteslidos == 0) {
+        printf("Cliente finalizou a conexão\n");
+        exit(EXIT_SUCCESS);
+    }
+
+    if (data.function == 1) {
+        // Define a velocidade de todos os trens como "val1"
+        window->setVelocity(data.val1);
+    } else if (data.function == 2) {
+        // Define a velocidade do trem "val1" como "val2"
+        window->setVelocity(data.val1, data.val2);
+    } else if (data.function == 3) {
+        // Habilita ou desabilita todos os trens com "val1"
+        window->setTrainEnable((bool)data.val1);
+    } else if (data.function == 4) {
+        // Habilita ou desabilita o trem "val1" com "val2"
+        window->setTrainEnable(data.val1, (bool)data.val2);
+    }
+
+    ::close(socketDescriptor);
+}
+
 void MainWindow::watchServer() {
-    //
+    struct sockaddr_in endereco;
+    int socketId;
+
+    // variáveis relacionadas com as conexões clientes
+    struct sockaddr_in enderecoCliente;
+    socklen_t tamanhoEnderecoCliente = sizeof(struct sockaddr);
+    int conexaoClienteId;
+
+    //mensagem enviada pelo cliente
+    Data data;
+
+    memset(&endereco, 0, sizeof(endereco));
+    endereco.sin_family = AF_INET;
+    endereco.sin_port = htons(PORTNUM);
+    // endereco.sin_addr.s_addr = INADDR_ANY;
+    endereco.sin_addr.s_addr = inet_addr("192.168.7.1");
+
+    /*
+     * Criando o Socket
+     *
+     * PARAM1: AF_INET ou AF_INET6 (IPV4 ou IPV6)
+     * PARAM2: SOCK_STREAM ou SOCK_DGRAM
+     * PARAM3: protocolo (IP, UDP, TCP, etc). Valor 0 escolhe automaticamente
+     */
+    socketId = socket(AF_INET, SOCK_STREAM, 0);
+
+    // Verificar erros
+    if (socketId == -1) {
+        printf("Falha ao executar socket()\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Conectando o socket a uma porta. Executado apenas no lado servidor
+    if (bind(socketId, (struct sockaddr *) &endereco, sizeof(struct sockaddr)) == -1) {
+        printf("Falha ao executar bind()\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Habilitando o servidor a receber conexoes do cliente
+    if (listen(socketId, 10) == -1) {
+        printf("Falha ao executar listen()\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (true) {
+        // Servidor fica bloqueado esperando uma conexão do cliente
+        conexaoClienteId = accept(socketId, (struct sockaddr *) &enderecoCliente, &tamanhoEnderecoCliente);
+
+        //disparar a thread
+        std::thread t(&MainWindow::socketHandler, this, conexaoClienteId, data);
+        t.detach();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {

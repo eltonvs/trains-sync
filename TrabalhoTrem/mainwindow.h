@@ -3,12 +3,25 @@
 
 #include <QMainWindow>
 #include <QCloseEvent>
+#include <arpa/inet.h>  //inet_addr
+#include <sys/socket.h> //socket
+#include <unistd.h>     //close
+#include <vector>
 #include "trem.h"
 #include "semaforo.h"
 
 namespace Ui {
 class MainWindow;
 }
+
+struct Data {
+    int function;
+    int val1;
+    int val2;
+};
+
+#define MAXNAME 100
+#define PORTNUM 4325
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -21,6 +34,7 @@ class MainWindow : public QMainWindow {
     void setTrainEnable(bool enable);
     void setTrainEnable(int train, bool enable);
     void watchServer();
+    static void socketHandler(MainWindow *window, int socketDescriptor, Data data);
 
  public slots:
     void updateInterface(int, int, int);
