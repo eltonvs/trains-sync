@@ -16,9 +16,15 @@ class MainWindow : public QMainWindow {
  public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+    void setVelocity(int velocity);
+    void setVelocity(int train, int velocity);
+    void setTrainEnable(bool enable);
+    void setTrainEnable(int train, bool enable);
+    void watchServer();
 
  public slots:
     void updateInterface(int, int, int);
+    void updateNumeros();
 
  protected:
     void closeEvent(QCloseEvent *event);
@@ -27,6 +33,7 @@ class MainWindow : public QMainWindow {
     Ui::MainWindow *ui;
     std::vector<Trem *> trens;
     std::vector<Semaforo *> semaforos;
+    std::thread server;
 };
 
 #endif // MAINWINDOW_H

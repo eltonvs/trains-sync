@@ -22,6 +22,7 @@ class Trem : public QObject {
 
  signals:
     void updateGUI(int, int, int);
+    void updateNumerosSignal();
 
  private:
    std::thread threadTrem;

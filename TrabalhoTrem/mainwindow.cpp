@@ -12,8 +12,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     for (auto i = 0u; i < trens.size(); i++) {
         connect(trens.at(i), SIGNAL(updateGUI(int, int, int)), SLOT(updateInterface(int, int, int)));
+        connect(trens.at(i), SIGNAL(updateNumerosSignal()), SLOT(updateNumeros()));
         trens.at(i)->start();
     }
+
 
     // Cria Semáforos
     semaforos.push_back(new Semaforo(1231, 1, IPC_CREAT|0600));  // Região Crítica 1
@@ -31,10 +33,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     trens.at(2)->addSemaforo(semaforos.at(2));
     // trem4 - apenas área crítica 3
     trens.at(3)->addSemaforo(semaforos.at(2));
+
+    server = std::thread(&MainWindow::watchServer, this);
 }
 
 MainWindow::~MainWindow() {
+    server.join();
     delete ui;
+}
+
+void MainWindow::watchServer() {
+    //
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
@@ -43,6 +52,12 @@ void MainWindow::closeEvent(QCloseEvent *event) {
         delete semaforos[i];
     }
     event->accept();
+}
+
+void MainWindow::updateNumeros() {
+    ui->nbSem01->display(semaforos.at(0)->getContador());
+    ui->nbSem02->display(semaforos.at(1)->getContador());
+    ui->nbSem03->display(semaforos.at(2)->getContador());
 }
 
 void MainWindow::updateInterface(int id, int x, int y) {
@@ -62,4 +77,24 @@ void MainWindow::updateInterface(int id, int x, int y) {
         default:
             break;
     }
+}
+
+void MainWindow::setVelocity(int velocity) {
+    for (auto i = 0u; i < trens.size(); i++) {
+        trens.at(i)->setVelocidade(velocity);
+    }
+}
+
+void MainWindow::setVelocity(int train, int velocity) {
+    trens.at(train)->setVelocidade(velocity);
+}
+
+void MainWindow::setTrainEnable(bool enable) {
+    for (auto i = 0u; i < trens.size(); i++) {
+        trens.at(i)->setEnable(enable);
+    }
+}
+
+void MainWindow::setTrainEnable(int train, bool enable) {
+    trens.at(train)->setEnable(enable);
 }
