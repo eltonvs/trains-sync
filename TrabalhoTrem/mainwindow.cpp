@@ -4,78 +4,103 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-    // Setup trens
-    trens.push_back(new Trem(1, 160, 30));
-    trens.push_back(new Trem(2, 130, 170));
-    trens.push_back(new Trem(3, 410, 170));
-    trens.push_back(new Trem(4, 270, 270));
-
-    for (auto i = 0u; i < trens.size(); i++) {
-        connect(trens.at(i), SIGNAL(updateGUI(int, int, int)), SLOT(updateInterface(int, int, int)));
-        connect(trens.at(i), SIGNAL(updateNumerosSignal()), SLOT(updateNumeros()));
-        trens.at(i)->start();
+    // Create Semaphores
+    sems = new std::vector<Semaphore *>();
+    for (int i = 1; i <= 3; i++) {
+        sems->push_back(new Semaphore(i, 1, IPC_CREAT|0600));  // Critical Section %i
     }
 
-    // Cria Semáforos
-    semaforos.push_back(new Semaforo(1231, 1, IPC_CREAT|0600));  // Região Crítica 1
-    semaforos.push_back(new Semaforo(1232, 1, IPC_CREAT|0600));  // Região Crítica 2
-    semaforos.push_back(new Semaforo(1233, 1, IPC_CREAT|0600));  // Região Crítica 3
+    // Setup trains
+    trains.push_back(new Train(1, Shape(Position(130, 30)), Position(160, 30), sems, Direction::ANTICLOCKWISE));
+    trains.push_back(new Train(2, Shape(Position(130, 130)), Position(130, 170), sems, Direction::CLOCKWISE));
+    trains.push_back(new Train(3, Shape(Position(270, 130)), Position(410, 170), sems, Direction::CLOCKWISE));
+    trains.push_back(new Train(4, Shape(Position(270, 230)), Position(270, 270), sems, Direction::CLOCKWISE));
 
-    // Associa semáforos com os trens
-    // trem1 - apenas área crítica 1
-    trens.at(0)->addSemaforo(semaforos.at(0));
-    // trem2 - áreas críticas 1 e 2
-    trens.at(1)->addSemaforo(semaforos.at(0));
-    trens.at(1)->addSemaforo(semaforos.at(1));
-    // trem3 - áreas críticas 2 e 3
-    trens.at(2)->addSemaforo(semaforos.at(1));
-    trens.at(2)->addSemaforo(semaforos.at(2));
-    // trem4 - apenas área crítica 3
-    trens.at(3)->addSemaforo(semaforos.at(2));
+    for (auto i = 0u; i < trains.size(); i++) {
+        connect(trains.at(i), SIGNAL(updateGUI(int, int, int)), SLOT(updateInterface(int, int, int)));
+        trains.at(i)->start();
+    }
 
+    // Start server
     server = std::thread(&MainWindow::watchServer, this);
+
+    connect(this, SIGNAL(updateCounter()), SLOT(slotUpdateCounter()));
+    counter = std::thread(&MainWindow::counterUpdate, this);
 }
 
 MainWindow::~MainWindow() {
-    server.join();
     delete ui;
 }
 
-void MainWindow::socketHandler(MainWindow *window, int socketDescriptor, Data data) {
-    int byteslidos;
+void MainWindow::closeEvent(QCloseEvent *event) {
+    // Detach Threads
+    server.detach();
+    counter.detach();
 
-    //Verificando erros
-    if (socketDescriptor == -1) {
-        printf("Falha ao executar accept()");
-        exit(EXIT_FAILURE);
+    // Delete semaphores
+    for (auto i = 0u; i < sems->size(); i++) {
+        delete sems->at(i);
+    }
+    delete sems;
+
+    // Delete Trains
+    for (auto i = 0u; i < trains.size(); i++) {
+        delete trains.at(i);
     }
 
-    // receber uma msg do cliente
-    byteslidos = recv(socketDescriptor, &data, sizeof(data), 0);
+    event->accept();
+}
 
-    if (byteslidos == -1) {
-        printf("Falha ao executar recv()");
-        exit(EXIT_FAILURE);
-    } else if (byteslidos == 0) {
-        printf("Cliente finalizou a conexão\n");
-        exit(EXIT_SUCCESS);
+void MainWindow::setSpeed(int speed) {
+    for (auto i = 0u; i < trains.size(); i++) {
+        trains.at(i)->setSpeed(speed);
     }
+}
 
-    if (data.function == 1) {
-        // Define a velocidade de todos os trens como "val1"
-        window->setVelocity(data.val1);
-    } else if (data.function == 2) {
-        // Define a velocidade do trem "val1" como "val2"
-        window->setVelocity(data.val1, data.val2);
-    } else if (data.function == 3) {
-        // Habilita ou desabilita todos os trens com "val1"
-        window->setTrainEnable((bool)data.val1);
-    } else if (data.function == 4) {
-        // Habilita ou desabilita o trem "val1" com "val2"
-        window->setTrainEnable(data.val1, (bool)data.val2);
+void MainWindow::setSpeed(int train, int speed) {
+    trains.at(train)->setSpeed(speed);
+}
+
+void MainWindow::setTrainEnable(bool enable) {
+    for (auto i = 0u; i < trains.size(); i++) {
+        trains.at(i)->setEnable(enable);
     }
+}
 
-    ::close(socketDescriptor);
+void MainWindow::setTrainEnable(int train, bool enable) {
+    trains.at(train)->setEnable(enable);
+}
+
+void MainWindow::counterUpdate() {
+    while (true) {
+        emit(updateCounter());
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void MainWindow::slotUpdateCounter() {
+    ui->nbSem01->display(sems->at(0)->getCounter());
+    ui->nbSem02->display(sems->at(1)->getCounter());
+    ui->nbSem03->display(sems->at(2)->getCounter());
+}
+
+void MainWindow::updateInterface(int id, int x, int y) {
+    switch (id) {
+        case 1:
+            ui->labelTrem01->setGeometry(x, y, 20, 20);
+            break;
+        case 2:
+            ui->labelTrem02->setGeometry(x, y, 20, 20);
+            break;
+        case 3:
+            ui->labelTrem03->setGeometry(x, y, 20, 20);
+            break;
+        case 4:
+            ui->labelTrem04->setGeometry(x, y, 20, 20);
+            break;
+        default:
+            break;
+    }
 }
 
 void MainWindow::watchServer() {
@@ -134,55 +159,40 @@ void MainWindow::watchServer() {
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent *event) {
-    // Deleta semáforos quando fecha a janela
-    for (auto i = 0u; i < semaforos.size(); i++) {
-        delete semaforos[i];
+void MainWindow::socketHandler(MainWindow *window, int socketDescriptor, Data data) {
+    int byteslidos;
+
+    //Verificando erros
+    if (socketDescriptor == -1) {
+        printf("Falha ao executar accept()");
+        exit(EXIT_FAILURE);
     }
-    event->accept();
-}
 
-void MainWindow::updateNumeros() {
-    ui->nbSem01->display(semaforos.at(0)->getContador());
-    ui->nbSem02->display(semaforos.at(1)->getContador());
-    ui->nbSem03->display(semaforos.at(2)->getContador());
-}
+    // receber uma msg do cliente
+    byteslidos = recv(socketDescriptor, &data, sizeof(data), 0);
+    printf("Mensagem Recebida: {%i, %i, %i}\n", data.function, data.val1, data.val2);
 
-void MainWindow::updateInterface(int id, int x, int y) {
-    switch(id){
-        case 1:
-            ui->labelTrem01->setGeometry(x, y, 20, 20);
-            break;
-        case 2:
-            ui->labelTrem02->setGeometry(x, y, 20, 20);
-            break;
-        case 3:
-            ui->labelTrem03->setGeometry(x, y, 20, 20);
-            break;
-        case 4:
-            ui->labelTrem04->setGeometry(x, y, 20, 20);
-            break;
-        default:
-            break;
+    if (byteslidos == -1) {
+        printf("Falha ao executar recv()");
+        exit(EXIT_FAILURE);
+    } else if (byteslidos == 0) {
+        printf("Cliente finalizou a conexão\n");
+        exit(EXIT_SUCCESS);
     }
-}
 
-void MainWindow::setVelocity(int velocity) {
-    for (auto i = 0u; i < trens.size(); i++) {
-        trens.at(i)->setVelocidade(velocity);
+    if (data.function == 1) {
+        // Define a velocidade de todos os trens como "val1"
+        window->setSpeed(data.val1);
+    } else if (data.function == 2) {
+        // Define a velocidade do trem "val1" como "val2"
+        window->setSpeed(data.val1, data.val2);
+    } else if (data.function == 3) {
+        // Habilita ou desabilita todos os trens com "val1"
+        window->setTrainEnable((bool)data.val1);
+    } else if (data.function == 4) {
+        // Habilita ou desabilita o trem "val1" com "val2"
+        window->setTrainEnable(data.val1, (bool)data.val2);
     }
-}
 
-void MainWindow::setVelocity(int train, int velocity) {
-    trens.at(train)->setVelocidade(velocity);
-}
-
-void MainWindow::setTrainEnable(bool enable) {
-    for (auto i = 0u; i < trens.size(); i++) {
-        trens.at(i)->setEnable(enable);
-    }
-}
-
-void MainWindow::setTrainEnable(int train, bool enable) {
-    trens.at(train)->setEnable(enable);
+    ::close(socketDescriptor);
 }

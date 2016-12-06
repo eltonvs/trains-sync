@@ -7,8 +7,8 @@
 #include <sys/socket.h> //socket
 #include <unistd.h>     //close
 #include <vector>
-#include "trem.h"
-#include "semaforo.h"
+#include "train.h"
+#include "semaphore.h"
 
 namespace Ui {
 class MainWindow;
@@ -29,25 +29,30 @@ class MainWindow : public QMainWindow {
  public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    void setVelocity(int velocity);
-    void setVelocity(int train, int velocity);
-    void setTrainEnable(bool enable);
-    void setTrainEnable(int train, bool enable);
+    void setSpeed(int);
+    void setSpeed(int, int);
+    void setTrainEnable(bool);
+    void setTrainEnable(int, bool);
+    void counterUpdate();
     void watchServer();
     static void socketHandler(MainWindow *window, int socketDescriptor, Data data);
 
  public slots:
     void updateInterface(int, int, int);
-    void updateNumeros();
+    void slotUpdateCounter();
+
+ signals:
+    void updateCounter();
 
  protected:
     void closeEvent(QCloseEvent *event);
 
  private:
     Ui::MainWindow *ui;
-    std::vector<Trem *> trens;
-    std::vector<Semaforo *> semaforos;
+    std::vector<Train *> trains;
+    std::vector<Semaphore *> *sems;
     std::thread server;
+    std::thread counter;
 };
 
 #endif // MAINWINDOW_H

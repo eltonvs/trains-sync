@@ -11,15 +11,14 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = TrabalhoTrem
 TEMPLATE = app
 
-
 SOURCES += main.cpp\
         mainwindow.cpp \
-        trem.cpp \
-        semaforo.cpp
+        train.cpp \
+        semaphore.cpp
 
 HEADERS  += mainwindow.h \
-            trem.h \
-            semaforo.h
+            train.h \
+            semaphore.h
 
 FORMS    += mainwindow.ui
 
