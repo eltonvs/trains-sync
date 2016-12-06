@@ -11,14 +11,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
     // Setup trains
-    trains.push_back(new Train(1, Shape(Position(130, 30)), Position(160, 30), sems, Direction::ANTICLOCKWISE));
-    trains.push_back(new Train(2, Shape(Position(130, 130)), Position(130, 170), sems, Direction::CLOCKWISE));
-    trains.push_back(new Train(3, Shape(Position(270, 130)), Position(410, 170), sems, Direction::CLOCKWISE));
-    trains.push_back(new Train(4, Shape(Position(270, 230)), Position(270, 270), sems, Direction::CLOCKWISE));
+    trains = new std::vector<Train *>();
+    trains->push_back(new Train(1, Shape(Position(130, 30)), Position(160, 30), sems, Direction::ANTICLOCKWISE));
+    trains->push_back(new Train(2, Shape(Position(130, 130)), Position(130, 170), sems, Direction::CLOCKWISE));
+    trains->push_back(new Train(3, Shape(Position(270, 130)), Position(410, 170), sems, Direction::CLOCKWISE));
+    trains->push_back(new Train(4, Shape(Position(270, 230)), Position(270, 270), sems, Direction::CLOCKWISE));
 
-    for (auto i = 0u; i < trains.size(); i++) {
-        connect(trains.at(i), SIGNAL(updateGUI(int, int, int)), SLOT(updateInterface(int, int, int)));
-        trains.at(i)->start();
+    for (auto i = 0u; i < trains->size(); i++) {
+        connect(trains->at(i), SIGNAL(updateGUI(int, int, int)), SLOT(updateInterface(int, int, int)));
+        trains->at(i)->start();
     }
 
     // Start server
@@ -44,31 +45,32 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     delete sems;
 
     // Delete Trains
-    for (auto i = 0u; i < trains.size(); i++) {
-        delete trains.at(i);
+    for (auto i = 0u; i < trains->size(); i++) {
+        delete trains->at(i);
     }
+    delete trains;
 
     event->accept();
 }
 
 void MainWindow::setSpeed(int speed) {
-    for (auto i = 0u; i < trains.size(); i++) {
-        trains.at(i)->setSpeed(speed);
+    for (auto i = 0u; i < trains->size(); i++) {
+        trains->at(i)->setSpeed(speed);
     }
 }
 
 void MainWindow::setSpeed(int train, int speed) {
-    trains.at(train)->setSpeed(speed);
+    trains->at(train)->setSpeed(speed);
 }
 
 void MainWindow::setTrainEnable(bool enable) {
-    for (auto i = 0u; i < trains.size(); i++) {
-        trains.at(i)->setEnable(enable);
+    for (auto i = 0u; i < trains->size(); i++) {
+        trains->at(i)->setEnable(enable);
     }
 }
 
 void MainWindow::setTrainEnable(int train, bool enable) {
-    trains.at(train)->setEnable(enable);
+    trains->at(train)->setEnable(enable);
 }
 
 void MainWindow::counterUpdate() {
@@ -79,9 +81,11 @@ void MainWindow::counterUpdate() {
 }
 
 void MainWindow::slotUpdateCounter() {
-    ui->nbSem01->display(sems->at(0)->getCounter());
-    ui->nbSem02->display(sems->at(1)->getCounter());
-    ui->nbSem03->display(sems->at(2)->getCounter());
+    if (sems != nullptr && sems->size() == 3) {
+        ui->nbSem01->display(sems->at(0)->getCounter());
+        ui->nbSem02->display(sems->at(1)->getCounter());
+        ui->nbSem03->display(sems->at(2)->getCounter());
+    }
 }
 
 void MainWindow::updateInterface(int id, int x, int y) {
@@ -155,7 +159,6 @@ void MainWindow::watchServer() {
         //disparar a thread
         std::thread t(&MainWindow::socketHandler, this, conexaoClienteId, data);
         t.detach();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
@@ -170,7 +173,7 @@ void MainWindow::socketHandler(MainWindow *window, int socketDescriptor, Data da
 
     // receber uma msg do cliente
     byteslidos = recv(socketDescriptor, &data, sizeof(data), 0);
-    printf("Mensagem Recebida: {%i, %i, %i}\n", data.function, data.val1, data.val2);
+    printf("Received Message: {%i, %i, %i}\n", data.op, data.v1, data.v2);
 
     if (byteslidos == -1) {
         printf("Falha ao executar recv()");
@@ -180,18 +183,18 @@ void MainWindow::socketHandler(MainWindow *window, int socketDescriptor, Data da
         exit(EXIT_SUCCESS);
     }
 
-    if (data.function == 1) {
-        // Define a velocidade de todos os trens como "val1"
-        window->setSpeed(data.val1);
-    } else if (data.function == 2) {
-        // Define a velocidade do trem "val1" como "val2"
-        window->setSpeed(data.val1, data.val2);
-    } else if (data.function == 3) {
-        // Habilita ou desabilita todos os trens com "val1"
-        window->setTrainEnable((bool)data.val1);
-    } else if (data.function == 4) {
-        // Habilita ou desabilita o trem "val1" com "val2"
-        window->setTrainEnable(data.val1, (bool)data.val2);
+    if (data.op == 1) {
+        // Define a velocidade de todos os trens como "v1"
+        window->setSpeed(data.v1);
+    } else if (data.op == 2) {
+        // Define a velocidade do trem "v1" como "v2"
+        window->setSpeed(data.v1, data.v2);
+    } else if (data.op == 3) {
+        // Habilita ou desabilita todos os trens com "v1"
+        window->setTrainEnable((bool)data.v1);
+    } else if (data.op == 4) {
+        // Habilita ou desabilita o trem "v1" com "v2"
+        window->setTrainEnable(data.v1, (bool)data.v2);
     }
 
     ::close(socketDescriptor);

@@ -40,13 +40,13 @@ Semaphore::~Semaphore() {
  */
 void Semaphore::P() {
     //o grupo é formado por apenas 1 semaforo
-    op.sem_num = 0;
+    op->sem_num = 0;
     //P()
-    op.sem_op = -1;
+    op->sem_op = -1;
     // Ao finalizar o processo, outros processos que estao pendentes pelo semaforo sao desbloqueados
-    op.sem_flg = SEM_UNDO;
+    op->sem_flg = SEM_UNDO;
 
-    semop(ID, &op, 1);
+    semop(ID, op, 1);
 }
 
 /**
@@ -54,11 +54,11 @@ void Semaphore::P() {
  * Used to exit from Critical Sections
  */
 void Semaphore::V() {
-    op.sem_num = 0; //o grupo é formado por apenas 1 semaforo
-    op.sem_op = 1; //P()
+    op->sem_num = 0; //o grupo é formado por apenas 1 semaforo
+    op->sem_op = 1; //P()
     // Ao finalizar o processo, outros processos que estao pendentes pelo semaforo sao desbloqueados
-    op.sem_flg = SEM_UNDO;
-    semop(ID, &op, 1);
+    op->sem_flg = SEM_UNDO;
+    semop(ID, op, 1);
 }
 
 /**

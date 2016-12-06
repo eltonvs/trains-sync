@@ -5,7 +5,7 @@ Train::Train(int id, Shape shape, Position initalPosition, std::vector<Semaphore
     this->shape = shape;
     this->currPos = initalPosition;
     this->speed = 100;
-    this->enable = true;
+    this->enable = false;
     this->sems = semaphores;
     this->move_direction = d;
 }
@@ -106,9 +106,7 @@ void Train::verifySection() {
 }
 
 void Train::setSpeed(int speed) {
-    if (speed > 0)
-        this->speed = speed;
-    this->speed = 10;
+    this->speed = speed;
 }
 
 void Train::setEnable(bool enable) {

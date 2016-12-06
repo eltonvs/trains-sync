@@ -17,7 +17,7 @@ class Semaphore {
  private:
     union semun{int val;} arg;
     int ID;
-    struct sembuf op;
+    struct sembuf *op = new sembuf();
 };
 
 #endif // SEMAPHORE_H

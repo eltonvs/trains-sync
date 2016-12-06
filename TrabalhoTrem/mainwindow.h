@@ -15,9 +15,7 @@ class MainWindow;
 }
 
 struct Data {
-    int function;
-    int val1;
-    int val2;
+    int op, v1, v2;
 };
 
 #define MAXNAME 100
@@ -49,7 +47,7 @@ class MainWindow : public QMainWindow {
 
  private:
     Ui::MainWindow *ui;
-    std::vector<Train *> trains;
+    std::vector<Train *> *trains;
     std::vector<Semaphore *> *sems;
     std::thread server;
     std::thread counter;
