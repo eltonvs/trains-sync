@@ -95,22 +95,23 @@ void MainWindow::slotUpdateCounter() {
 }
 
 void MainWindow::updateInterface(int id, int x, int y, bool critic) {
+    QString styleCritic = "border: 1px solid red";
     switch (id) {
         case 1:
             ui->labelTrem01->setGeometry(x, y, 20, 20);
-            ui->labelTrem01->setStyleSheet(critic ? "border: 1px solid red" : "border: none");
+            ui->labelTrem01->setStyleSheet(critic ? styleCritic : "border: none");
             break;
         case 2:
             ui->labelTrem02->setGeometry(x, y, 20, 20);
-            ui->labelTrem02->setStyleSheet(critic ? "border: 1px solid red" : "border: none");
+            ui->labelTrem02->setStyleSheet(critic ? styleCritic : "border: none");
             break;
         case 3:
             ui->labelTrem03->setGeometry(x, y, 20, 20);
-            ui->labelTrem03->setStyleSheet(critic ? "border: 1px solid red" : "border: none");
+            ui->labelTrem03->setStyleSheet(critic ? styleCritic : "border: none");
             break;
         case 4:
             ui->labelTrem04->setGeometry(x, y, 20, 20);
-            ui->labelTrem04->setStyleSheet(critic ? "border: 1px solid red" : "border: none");
+            ui->labelTrem04->setStyleSheet(critic ? styleCritic : "border: none");
             break;
         default:
             break;
