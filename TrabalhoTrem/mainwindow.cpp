@@ -1,8 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QBitmap>
+#include <iostream>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+    ui->labelTrem01->setPixmap(QCoreApplication::applicationDirPath() + "/../img/train01.png");
+    ui->labelTrem02->setPixmap(QCoreApplication::applicationDirPath() + "/../img/train02.png");
+    ui->labelTrem03->setPixmap(QCoreApplication::applicationDirPath() + "/../img/train03.png");
+    ui->labelTrem04->setPixmap(QCoreApplication::applicationDirPath() + "/../img/train04.png");
 
     // Create Semaphores
     sems = new std::vector<Semaphore *>();
@@ -18,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     trains->push_back(new Train(4, Shape(Position(270, 230)), Position(270, 270), sems, Direction::CLOCKWISE));
 
     for (auto i = 0u; i < trains->size(); i++) {
-        connect(trains->at(i), SIGNAL(updateGUI(int, int, int)), SLOT(updateInterface(int, int, int)));
+        connect(trains->at(i), SIGNAL(updateGUI(int, int, int, bool)), SLOT(updateInterface(int, int, int, bool)));
         trains->at(i)->start();
     }
 
@@ -88,19 +94,23 @@ void MainWindow::slotUpdateCounter() {
     }
 }
 
-void MainWindow::updateInterface(int id, int x, int y) {
+void MainWindow::updateInterface(int id, int x, int y, bool critic) {
     switch (id) {
         case 1:
             ui->labelTrem01->setGeometry(x, y, 20, 20);
+            ui->labelTrem01->setStyleSheet(critic ? "border: 1px solid red" : "border: none");
             break;
         case 2:
             ui->labelTrem02->setGeometry(x, y, 20, 20);
+            ui->labelTrem02->setStyleSheet(critic ? "border: 1px solid red" : "border: none");
             break;
         case 3:
             ui->labelTrem03->setGeometry(x, y, 20, 20);
+            ui->labelTrem03->setStyleSheet(critic ? "border: 1px solid red" : "border: none");
             break;
         case 4:
             ui->labelTrem04->setGeometry(x, y, 20, 20);
+            ui->labelTrem04->setStyleSheet(critic ? "border: 1px solid red" : "border: none");
             break;
         default:
             break;
@@ -123,7 +133,7 @@ void MainWindow::watchServer() {
     endereco.sin_family = AF_INET;
     endereco.sin_port = htons(PORTNUM);
     // endereco.sin_addr.s_addr = INADDR_ANY;
-    endereco.sin_addr.s_addr = inet_addr("192.168.7.1");
+    endereco.sin_addr.s_addr = inet_addr(IP_SERVER);
 
     /*
      * Criando o Socket

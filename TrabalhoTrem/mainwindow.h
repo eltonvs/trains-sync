@@ -20,6 +20,7 @@ struct Data {
 
 #define MAXNAME 100
 #define PORTNUM 4325
+#define IP_SERVER "192.168.7.1"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -36,7 +37,7 @@ class MainWindow : public QMainWindow {
     static void socketHandler(MainWindow *window, int socketDescriptor, Data data);
 
  public slots:
-    void updateInterface(int, int, int);
+    void updateInterface(int, int, int, bool);
     void slotUpdateCounter();
 
  signals:

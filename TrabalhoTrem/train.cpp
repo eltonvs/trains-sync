@@ -6,6 +6,7 @@ Train::Train(int id, Shape shape, Position initalPosition, std::vector<Semaphore
     this->currPos = initalPosition;
     this->speed = 100;
     this->enable = false;
+    this->critic = false;
     this->sems = semaphores;
     this->move_direction = d;
 }
@@ -46,7 +47,7 @@ void Train::move() {
 void Train::run() {
     while (true) {
         if (enable) {
-            emit updateGUI(id, currPos.x, currPos.y);
+            emit updateGUI(id, currPos.x, currPos.y, critic);
             verifySection();
             move();
         }
@@ -60,16 +61,19 @@ void Train::verifySection() {
         // Entering on first Critial Section
         if (currPos.x == shape.left() && currPos.y == shape.bottom() - safety_margin) {
             sems->at(0)->P();
+            critic = true;
         }
         // Exiting from first Critial Section
         if (currPos.x == shape.right() && currPos.y == shape.bottom() - safety_margin) {
             sems->at(0)->V();
+            critic = false;
         }
     } else if (id == 2) {
         // Entering on first Critial Section
         if (currPos.x == shape.left() && currPos.y == shape.top() + safety_margin) {
             sems->at(0)->P();
             sems->at(1)->P();
+            critic = true;
         }
         // Exiting from first Critial Section
         if (currPos.x == shape.right() && currPos.y == shape.top() + safety_margin) {
@@ -78,12 +82,14 @@ void Train::verifySection() {
         // Exiting from second Critial Section
         if (currPos.x == shape.right() - safety_margin && currPos.y == shape.bottom()) {
             sems->at(1)->V();
+            critic = false;
         }
     } else if (id == 3) {
         // Entering on third Critial Section
         if (currPos.x == shape.right() && currPos.y == shape.bottom() - safety_margin) {
             sems->at(2)->P();
             sems->at(1)->P();
+            critic = true;
         }
         // Exiting from third Critial Section
         if (currPos.x == shape.left() && currPos.y == shape.bottom() - safety_margin) {
@@ -92,15 +98,18 @@ void Train::verifySection() {
         // Exiting from second Critial Section
         if (currPos.x == shape.left() + safety_margin && currPos.y == shape.top()) {
             sems->at(1)->V();
+            critic = false;
         }
     } else if (id == 4) {
         // Entering on third Critial Section
         if (currPos.x == shape.left() && currPos.y == shape.top() + safety_margin) {
             sems->at(2)->P();
+            critic = true;
         }
         // Exiting from third Critial Section
         if (currPos.x == shape.right() && currPos.y == shape.top() + safety_margin) {
             sems->at(2)->V();
+            critic = false;
         }
     }
 }

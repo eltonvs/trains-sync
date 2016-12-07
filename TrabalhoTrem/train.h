@@ -48,7 +48,7 @@ class Train : public QObject {
     void setEnable(bool);
 
  signals:
-    void updateGUI(int, int, int);
+    void updateGUI(int, int, int, bool);
 
  private:
    int id;
@@ -57,6 +57,7 @@ class Train : public QObject {
    std::thread threadTrem;
    int speed;
    bool enable;
+   bool critic;
    Direction move_direction;
    std::vector<Semaphore *> *sems;
 };
