@@ -91,7 +91,7 @@ int main() {
         } else if (data.op == 3) {
             std::cout << "\n>>> Enable/Disable all trains\n";
             std::cout << "What do you want? (Green - Enable | Red - Disable)\n";
-            data.v2 = getPotentiometerBinary(&b);
+            data.v1 = getPotentiometerBinary(&b);
         } else {
             std::cout << "\n>>> Enable/Disable a specific train\n";
             std::cout << "Train [1 - 4]: ";
