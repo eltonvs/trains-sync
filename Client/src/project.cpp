@@ -1,14 +1,10 @@
-#include <cstdio>       //printf
-#include <cstring>      //memset
-#include <cstdlib>      //exit
-#include <netinet/in.h> //htons
-#include <arpa/inet.h>  //inet_addr
-#include <sys/socket.h> //socket
-#include <unistd.h>     //close
 #include <iostream>
 
+#include "beagle.h"
+#include "socket.h"
+
 #define PORTNUM 4325
-#define SERVERIP "192.168.7.1"
+#define POTENTIOMETER_MAX_VAL 4096
 
 struct Data {
     int op, v1, v2;
@@ -25,46 +21,45 @@ void menu() {
     std::cout << std::string(37, '-') << "\n";
 }
 
-bool sendData(Data &d) {
-    struct sockaddr_in address;
-    int socketId;
-    int sentData;
-
-    // Address Settings
-    memset(&address, 0, sizeof(address));
-    address.sin_family = AF_INET;
-    address.sin_port = htons(PORTNUM);
-    address.sin_addr.s_addr = inet_addr(SERVERIP);
-
-    // Create Socket
-    socketId = socket(AF_INET, SOCK_STREAM, 0);
-
-    // Check Errors
-    if (socketId == -1) {
-        std::cerr << "Fail at socket()\n";
-        return false;
+int getPotentiometerStep(Beagle *b) {
+    int step = 0;
+    while (!b->getButtonValue()) {
+        int p_val = b->getPotentiometerValue();
+        if (p_val < POTENTIOMETER_MAX_VAL/3) {
+            b->setColorRGB(RED);
+            step = 0;
+        } else if (p_val < 2*(POTENTIOMETER_MAX_VAL/3)) {
+            b->setColorRGB(GREEN);
+            step = 1;
+        } else {
+            b->setColorRGB(BLUE);
+            step = 2;
+        }
     }
+    return step;
+}
 
-    // Conectando o socket cliente ao socket servidor
-    if (connect(socketId, (struct sockaddr *) &address, sizeof(struct sockaddr)) == -1) {
-        std::cerr << "Fail at connect()\n";
-        return false;
+bool getPotentiometerBinary(Beagle *b) {
+    bool r = false;
+    while (!b->getButtonValue()) {
+        int p_val = b->getPotentiometerValue();
+        if (p_val < POTENTIOMETER_MAX_VAL/2) {
+            b->setColorRGB(RED);
+            r = false;
+        } else {
+            b->setColorRGB(GREEN);
+            r = true;
+        }
     }
-
-    sentData = send(socketId, &d, sizeof(d), 0);
-
-    if (sentData == -1) {
-        std::cerr << "Fail at send()";
-        return false;
-    }
-
-    close(socketId);
-
-    return true;
+    return r;
 }
 
 int main() {
+    Socket<Data> s(PORTNUM, "192.168.7.1");
+    Beagle b;
     Data data;
+
+    b.turnLedOn();
 
     while (true) {
         do {
@@ -75,11 +70,14 @@ int main() {
 
         if (data.op == 0) {
             std::cout << "\n>>> Exiting...\n";
+            b.turnLedOff();
+            b.turnOffRGB();
             return 0;
         } else if (data.op == 1) {
             std::cout << "\n>>> Set speed for all trains\n";
-            std::cout << "New Speed: ";
-            std::cin >> data.v1;
+            std::cout << "Turn the potentiometer to change speed (Red - Fast | Green - Normal | Blue - Slow)\n";
+            int selected = getPotentiometerStep(&b);
+            data.v1 = selected == 0 ? 10 : selected == 1 ? 50 : 150;
         } else if (data.op == 2) {
             std::cout << "\n>>> Set speed for a specific train\n";
             std::cout << "Train [1 - 4]: ";
@@ -87,14 +85,13 @@ int main() {
                 std::cin >> data.v1;
             } while (data.v1 < 1 || data.v1 > 4);
             data.v1--;
-            std::cout << "New Speed: ";
-            std::cin >> data.v2;
+            std::cout << "Turn the potentiometer to change speed (Red - Fast | Green - Normal | Blue - Slow)\n";
+            int selected = getPotentiometerStep(&b);
+            data.v2 = selected == 0 ? 10 : selected == 1 ? 50 : 150;
         } else if (data.op == 3) {
             std::cout << "\n>>> Enable/Disable all trains\n";
-            std::cout << "What do you want? (1 - Enable | 0 - Disable) ";
-            do {
-                std::cin >> data.v1;
-            } while (data.v1 && data.v1 != 1);
+            std::cout << "What do you want? (Green - Enable | Red - Disable)\n";
+            data.v2 = getPotentiometerBinary(&b);
         } else {
             std::cout << "\n>>> Enable/Disable a specific train\n";
             std::cout << "Train [1 - 4]: ";
@@ -102,14 +99,18 @@ int main() {
                 std::cin >> data.v1;
             } while (data.v1 < 1 || data.v1 > 4);
             data.v1--;
-            std::cout << "What do you want? (1 - Enable | 0 - Disable) ";
-            do {
-                std::cin >> data.v2;
-            } while (data.v2 && data.v2 != 1);
+            std::cout << "What do you want? (Green - Enable | Red - Disable)\n";
+            data.v2 = getPotentiometerBinary(&b);
         }
 
-        sendData(data);
+        b.turnOffRGB();
+
+        s.setData(data);
+        s.send();
     }
+
+    b.turnLedOff();
+    b.turnOffRGB();
 
     return 0;
 }
